@@ -1,0 +1,93 @@
+import mysql.connector
+import tkinter as tk
+from tkinter import messagebox
+from datetime import date
+from datetime import datetime
+
+today = date.today()
+now = datetime.now()
+
+class gui:
+    def __init__(self):
+        self.conn = mysql.connector.connect(host="145.74.104.145",
+                                       user="wasgo",
+                                       password="NativeSQL1@",
+                                       auth_plugin='mysql_native_password',
+                                       db="wasgo")
+
+        self.cursor = self.conn.cursor()
+
+        self.cursor.execute("SELECT bericht FROM piep")
+
+        self.main_window = tk.Tk()
+        self.main_window.geometry("800x500")
+
+        self.main_window.title("PyPiep - Rik Heijsen")
+
+        self.top_frame = tk.Frame(self.main_window)
+        self.mid_frame = tk.Frame(self.main_window)
+        self.bottom_frame = tk.Frame(self.main_window)
+
+        self.bericht_entry = tk.Entry(self.top_frame, width=15)
+        self.tag_entry = tk.Entry(self.mid_frame, width=10)
+
+        self.verstuur_button = tk.Button(self.top_frame, text="Plaats bericht", command=self.plaats_bericht)
+        self.ververs_button = tk.Button(self.mid_frame, text="Ververs", command=self.filter)
+
+        self.text_frame = tk.Text(self.bottom_frame, height=30, width=40)
+        self.scroll_bar = tk.Scrollbar(self.bottom_frame)
+
+
+
+
+        self.scroll_bar.pack(side=tk.RIGHT, fill=tk.Y)
+        self.text_frame.pack(side=tk.LEFT, fill=tk.Y)
+
+        self.scroll_bar.config(command=self.text_frame.yview)
+        self.text_frame.config(yscrollcommand=self.scroll_bar.set)
+
+        for bericht in self.cursor:
+            for j in range(len(bericht)):
+                self.text_frame.insert(tk.END, bericht[j] + '\n')
+
+
+
+        self.bericht_entry.pack(side="left")
+        self.tag_entry.pack(side="left")
+
+        self.verstuur_button.pack(side="right")
+        self.ververs_button.pack(side="left")
+
+        self.top_frame.pack()
+        self.mid_frame.pack()
+        self.bottom_frame.pack()
+
+        tk.mainloop()
+
+    def plaats_bericht(self):
+        mycursor = self.conn.cursor()
+        test_bericht = str(self.bericht_entry.get())
+        student_nr = 622982
+        date = today.strftime("%y-%m-%d")
+        time = now.strftime("%H:%M:%S")
+        query = "INSERT INTO piep (bericht, datum, tijd, student_nr) VALUES(%s, %s, %s, %s)"
+        mycursor.execute(query, (test_bericht, date, time, student_nr))
+        self.conn.commit()
+        tk.messagebox.showinfo("Succes!", "Bericht succesvol geplaatst! :)")
+
+
+    def filter(self):
+        mycursor = self.conn.cursor(buffered=True)
+        tag = str(self.tag_entry.get())
+        query = "SELECT bericht FROM piep WHERE bericht LIKE %s"
+        filter_test = (tag, )
+        mycursor.execute(query, filter_test)
+        results = mycursor.fetchall()
+        self.text_frame.delete("1.0", "end")
+        for bericht in results:
+            for j in range(len(bericht)):
+                self.text_frame.insert(tk.END, bericht[j] + '\n')
+
+
+if __name__ == '__main__':
+    gui()
